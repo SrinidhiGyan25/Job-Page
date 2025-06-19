@@ -61,7 +61,9 @@ def setup_chrome_driver():
     
     try:
         # Use webdriver-manager to automatically download and setup ChromeDriver
-        service = Service(ChromeDriverManager().install())
+        options.binary_location = "/usr/bin/chromium"  # Use system Chromium
+        service = Service("/usr/bin/chromedriver")     # Use system ChromeDriver
+
         driver = webdriver.Chrome(service=service, options=options)
         
         # Additional anti-detection
