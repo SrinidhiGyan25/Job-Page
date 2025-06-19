@@ -1,15 +1,19 @@
-# Use Python 3.9 slim image
-FROM python:3.9-slim
+# Use Python 3.9 with Ubuntu base for better Chrome support
+FROM python:3.9-slim-bullseye
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for Chrome
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
+    curl \
     gnupg \
     unzip \
-    curl \
     xvfb \
     fonts-liberation \
     libasound2 \
@@ -17,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     libatk1.0-0 \
     libatspi2.0-0 \
     libdrm2 \
+    libxss1 \
     libgtk-3-0 \
     libnspr4 \
     libnss3 \
@@ -25,23 +30,19 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
+    libu2f-udev \
+    libvulkan1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Google Chrome
+# Install Google Chrome (stable version)
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Get Chrome version and install matching ChromeDriver
-RUN CHROME_VERSION=$(google-chrome --version | cut -d " " -f3 | cut -d "." -f1) \
-    && CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}") \
-    && wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" \
-    && unzip /tmp/chromedriver.zip -d /tmp/ \
-    && mv /tmp/chromedriver /usr/local/bin/chromedriver \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm /tmp/chromedriver.zip
+# Install ChromeDriver using webdriver-manager (automatic version matching)
+RUN pip install webdriver-manager
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
@@ -50,16 +51,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create a non-root user for security
+RUN useradd --create-home --shell /bin/bash app \
+    && chown -R app:app /app
+USER app
+
 # Expose port
 EXPOSE 5000
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PORT=5000
-
 # Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=60s --timeout=30s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # Start command
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app", "--timeout", "120", "--workers", "1"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app", "--timeout", "300", "--workers", "1", "--preload"]

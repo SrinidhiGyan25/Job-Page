@@ -7,9 +7,11 @@ from datetime import datetime
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 import random
 import json
 
@@ -21,7 +23,7 @@ last_updated = None
 scraping_in_progress = False
 
 def setup_chrome_driver():
-    """Setup Chrome driver for Render deployment"""
+    """Setup Chrome driver with webdriver-manager for automatic version matching"""
     options = Options()
     
     # Essential headless options for server deployment
@@ -40,16 +42,32 @@ def setup_chrome_driver():
     options.add_argument('--single-process')
     options.add_argument('--disable-background-timer-throttling')
     options.add_argument('--disable-renderer-backgrounding')
+    options.add_argument('--disable-backgrounding-occluded-windows')
+    options.add_argument('--disable-features=TranslateUI')
+    options.add_argument('--disable-ipc-flooding-protection')
     
     # Anti-detection measures
-    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     
+    # Additional stability options
+    options.add_argument('--disable-web-security')
+    options.add_argument('--disable-features=VizDisplayCompositor')
+    options.add_argument('--disable-logging')
+    options.add_argument('--disable-permissions-api')
+    options.add_argument('--disable-popup-blocking')
+    
     try:
-        driver = webdriver.Chrome(options=options)
+        # Use webdriver-manager to automatically download and setup ChromeDriver
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        
+        # Additional anti-detection
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
+        print("✅ Chrome driver setup successful")
         return driver
     except Exception as e:
         print(f"❌ Chrome setup failed: {e}")
