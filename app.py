@@ -75,7 +75,7 @@ def setup_chrome_driver():
         print(f"❌ Chrome setup failed: {e}")
         return None
 
-def scrape_naukri_jobs(query="Data Scientist", pages=2):
+def scrape_naukri_jobs(query="PCB Design", pages=5):
     """Scrape Naukri jobs"""
     global job_data, last_updated, scraping_in_progress
     
@@ -191,7 +191,7 @@ def scrape_naukri_jobs(query="Data Scientist", pages=2):
 def schedule_scraping():
     """Schedule the scraping task"""
     def run_scraper():
-        scrape_naukri_jobs("Data Scientist", pages=2)
+        scrape_naukri_jobs("PCB Design", pages=5)
     
     # Schedule scraping every hour
     schedule.every().hour.do(run_scraper)
@@ -211,7 +211,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latest Data Science Jobs - Naukri</title>
+    <title>Latest Jobs - Naukri</title>
     <style>
         * {
             margin: 0;
@@ -393,7 +393,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Latest Data Science Jobs</h1>
+            <h1>Latest Jobs</h1>
             <p>Fresh opportunities updated every hour from Naukri.com</p>
             <div class="stats">
                 <div class="stat-item">
@@ -499,7 +499,7 @@ def api_jobs():
 def manual_refresh():
     """Manual refresh endpoint"""
     if not scraping_in_progress:
-        thread = threading.Thread(target=lambda: scrape_naukri_jobs("Data Scientist", pages=2))
+        thread = threading.Thread(target=lambda: scrape_naukri_jobs("PCB Design", pages=5))
         thread.daemon = True
         thread.start()
     return jsonify({'status': 'refresh_started'})
