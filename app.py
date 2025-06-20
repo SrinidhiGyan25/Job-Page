@@ -75,7 +75,7 @@ def setup_chrome_driver():
         print(f"❌ Chrome setup failed: {e}")
         return None
 
-def scrape_naukri_jobs(query="PCB Design", pages=5):
+def scrape_naukri_jobs(query="PCB Design", pages=2):
     """Scrape Naukri jobs"""
     global job_data, last_updated, scraping_in_progress
     
@@ -191,7 +191,7 @@ def scrape_naukri_jobs(query="PCB Design", pages=5):
 def schedule_scraping():
     """Schedule the scraping task"""
     def run_scraper():
-        scrape_naukri_jobs("PCB Design", pages=5)
+        scrape_naukri_jobs("PCB Design", pages=2)
     
     # Schedule scraping every hour
     schedule.every().hour.do(run_scraper)
@@ -499,7 +499,7 @@ def api_jobs():
 def manual_refresh():
     """Manual refresh endpoint"""
     if not scraping_in_progress:
-        thread = threading.Thread(target=lambda: scrape_naukri_jobs("PCB Design", pages=5))
+        thread = threading.Thread(target=lambda: scrape_naukri_jobs("PCB Design", pages=2))
         thread.daemon = True
         thread.start()
     return jsonify({'status': 'refresh_started'})
